@@ -5,3 +5,5 @@ tags: devops
 ---
 
 iftop 是linux实时网络带宽监控工具
+
+iftop 工具可以有效统计linux机器的网络负载情况。
