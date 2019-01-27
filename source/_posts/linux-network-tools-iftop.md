@@ -10,7 +10,7 @@ iftop 工具可以有效统计linux机器的网络负载情况。
 
 <!-- more -->
 
-使用示例:
-![40](/images/iftop.png)
+iftop使用示例:
+![iftop-w50](/images/iftop.png)
 显示数据分析：
 第一行：刻度行，用来帮助展示流量柱状图。例如途中 sns-mongod-stagin01 到 sns-mongos-staging02的网络流量是400Mb左右。
