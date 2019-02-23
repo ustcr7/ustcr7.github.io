@@ -6,15 +6,24 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="http://yoursite.com">
-  <title>Archives | ustcr7</title>
+  <title>内存寻址 - 分段 | ustcr7</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="ustcr7">
-<meta property="og:url" content="http://yoursite.com/archives/index.html">
+  <meta name="description" content="CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&amp;gt; [segmentation unit] –&amp;gt; 线性地址 –&amp;gt; [paging unit] –&amp;gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。 内存操作流程地址总线用来指定内存的地址。地址线的根数决定了最大寻址空间。eg: 32根地址线，最大寻">
+<meta name="keywords" content="linux">
+<meta property="og:type" content="article">
+<meta property="og:title" content="内存寻址 - 分段">
+<meta property="og:url" content="http://yoursite.com/2019/02/20/linux-kernal-memory-md/index.html">
 <meta property="og:site_name" content="ustcr7">
+<meta property="og:description" content="CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&amp;gt; [segmentation unit] –&amp;gt; 线性地址 –&amp;gt; [paging unit] –&amp;gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。 内存操作流程地址总线用来指定内存的地址。地址线的根数决定了最大寻址空间。eg: 32根地址线，最大寻">
 <meta property="og:locale" content="default">
+<meta property="og:image" content="http://yoursite.com/images/memory_cpu.png">
+<meta property="og:image" content="http://yoursite.com/images/linux-kernal-memory-md/segment_selector_fields.png">
+<meta property="og:image" content="http://yoursite.com/images/linux-kernal-memory-md/segment_unit.png">
+<meta property="og:updated_time" content="2019-02-23T10:41:52.546Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ustcr7">
+<meta name="twitter:title" content="内存寻址 - 分段">
+<meta name="twitter:description" content="CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&amp;gt; [segmentation unit] –&amp;gt; 线性地址 –&amp;gt; [paging unit] –&amp;gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。 内存操作流程地址总线用来指定内存的地址。地址线的根数决定了最大寻址空间。eg: 32根地址线，最大寻">
+<meta name="twitter:image" content="http://yoursite.com/images/memory_cpu.png">
   
     <link rel="alternative" href="/atom.xml" title="ustcr7" type="application/atom+xml">
   
@@ -154,36 +163,70 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-linux-kernal-memory-md" class="article article-type-post " itemscope="" itemprop="blogPost">
+  <div class="article-inner">
     
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2019/02/20/linux-kernal-memory-md/" class="archive-article-date">
-  	<time datetime="2019-02-19T16:45:23.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-02-20</time>
-</a>
-        </div>
-    	 
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/02/20/linux-kernal-memory-md/">内存寻址 - 分段</a>
+    <h1 class="article-title" itemprop="name">
+      内存寻址 - 分段
     </h1>
   
 
-        <div class="article-info info-on-right">
-          
+        
+        <a href="/2019/02/20/linux-kernal-memory-md/" class="archive-article-date">
+  	<time datetime="2019-02-19T16:45:23.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-02-20</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&gt; [segmentation unit] –&gt; 线性地址 –&gt; [paging unit] –&gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。</p>
+<h3 id="内存操作流程"><a href="#内存操作流程" class="headerlink" title="内存操作流程"></a>内存操作流程</h3><p><img src="/images/memory_cpu.png" alt="cpu操作内存流程" width="30%" height="30%"><br>地址总线用来指定内存的地址。地址线的根数决定了最大寻址空间。eg: 32根地址线，最大寻址范围是: 2^32 Bytes (内存的最小单元是字节)。<br>数据总线决定了cpu读写内存的速度。<br>控制总线用来决定对内存的操作类型(eg:读/写内存)。</p>
+<h3 id="8086-内存分段"><a href="#8086-内存分段" class="headerlink" title="8086 内存分段"></a>8086 内存分段</h3><p>8086 cpu的寄存器是16位，而内存地址总线是20位。为了充分使用1MB的寻址空间，使用 段地址 * 16 + 偏移地址 的方法来表示内存地址。<br>段地址存储在段寄存器里 (cs代码段 ds数据段 ss 堆栈寄存器 es附加寄存器)，例如cpu总是从 CS:IP (代码段寄存器:指令寄存器) 指向的内容读取指令。<br>由于程序可以修改CS IP寄存器，因此不同程序之间的内存很容易被互相破坏。</p>
+<h3 id="80286-内存分段"><a href="#80286-内存分段" class="headerlink" title="80286 内存分段"></a>80286 内存分段</h3><p>80286 cpu新增了保护模式(protected mode)，改进了分段的实现方式。新增了几个概念：</p>
+<blockquote>
+<p> <em>Segment Descriptor</em>:      描述段的相关数据，例如段的起始线性地址(Base)，地址区间最大长度(Limit)，段的访问特权级别(DPL)等。<br> <em>Global Descriptor Table</em>: GDT存储segment descriptor的全局table。<br> <em>Local Descriptor Table</em>:  LDT存储segment descriptor的local table(每个进程如有需要可以自行创建)。<br> <em>Segment Selector</em>:        逻辑地址的段标识符部分，用来从GDT/LDT中定位到具体的segment descriptor的。  </p>
+</blockquote>
+<p>逻辑地址由两部分组成: segment selector + 偏移量。 其中segment selector 长度为16bit，存储在各个段寄存器中(段寄存器不直接存储各个段的起始地址)，其包含字段如下:  </p>
+<p><img src="/images/linux-kernal-memory-md/segment_selector_fields.png" alt="segment selector字段" width="50%" height="50%">  </p>
+<p>TI 表示segment descriptor是在GDT还是LDT中。<br>index 表示segment descriptor 在GDT/LDT中的位置。<br>RPL 对应的segment selector 装入cs寄存器时用于表示CPU的执行特权级别。</p>
+<p>逻辑地址到线性地址转换过程:<br>1 根据segment selector TI标记确定 segment descritor存储在GDT或LDT中<br>2 根据segment selector 的index字段 从 GDT/LDT中找到下标对应的segment descriptor<br>3 从segment descriptor 中获取段的起始地址<br>4 段起始地址 + 偏移地址 得到最终的线性地址</p>
+<p><img src="/images/linux-kernal-memory-md/segment_unit.png" alt="逻辑地址到线性地址转换过程" width="70%">  </p>
+<p>应用程序可以修改段寄存器中的segment selector，但是无法修改GDT/LDT中的值(由操作系统负责修改) ，使用一个无效的逻辑地址可能会找不到合法的segment descriptor 从而产生segmentation fault错误。</p>
+<h3 id="linux内存分段"><a href="#linux内存分段" class="headerlink" title="linux内存分段"></a>linux内存分段</h3><p>linux为了可移植性 以非常有限的方式使用分段，所有的用户进程/内核进程共享相同的segment descriptor来进行指令和数据寻址。这组segment descriptor对应的segment selector用宏直接定义 <strong>USER_CS, </strong>USER_DS, <strong>KERNEL_CS, </strong>KERNEL_DS，且这些段的起始地址都是0(逻辑地址的偏移字段和线性地址是一致的)。CS，DS寄存器在CPU特权级别变化时会自动装载对应的segment selector。<br>linux的GDT主要包括了用户/内核的代码/指令4个段，3个线程局部存储段等。大多数linux程序不使用LDT，因此内核在GDT中定义了一个默认的LDT供多数进程共享。</p>
+<h3 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h3><p>&lt;&lt; understanding the linux kernal &gt;&gt;<br>&lt;&lt; 汇编语言 - 王爽 &gt;&gt;<br><a href="https://zhuanlan.zhihu.com/p/27401519" target="_blank" rel="noopener">8026与保护模式</a><br><a href="https://zhuanlan.zhihu.com/p/55478625" target="_blank" rel="noopener">CPU的运行级别和保护机制</a></p>
+
+      
+
+      
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>谢谢你请我吃糖果<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
+        </div>
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
@@ -195,57 +238,106 @@
 		</ul>
 	</div>
 
-          
+      
 
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
         </div>
-        <div class="clearfix"></div>
-    </header>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=http://yoursite.com/2019/02/20/linux-kernal-memory-md/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2019/01/28/linux-network-tools-iftop/" class="archive-article-date">
-  	<time datetime="2019-01-27T17:00:38.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-01-28</time>
-</a>
+<nav id="article-nav">
+  
+  
+    <a href="/2019/01/28/linux-network-tools-iftop/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">linux 网络工具 - iftop</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
+        
+        
+    </div>
+</aside>
+
+
+
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/01/28/linux-network-tools-iftop/">linux 网络工具 - iftop</a>
-    </h1>
+  
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">devops</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
   
 
-    
+  
+
+  
 
 
           </div>
@@ -268,8 +360,8 @@
 	var yiliaConfig = {
 		mathjax: false,
 		isHome: false,
-		isPost: false,
-		isArchive: true,
+		isPost: true,
+		isArchive: false,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,
