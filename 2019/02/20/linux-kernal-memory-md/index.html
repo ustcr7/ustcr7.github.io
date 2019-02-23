@@ -8,21 +8,21 @@
   <link rel="dns-prefetch" href="http://yoursite.com">
   <title>内存寻址 - 分段 | ustcr7</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&amp;gt; [segmentation unit] –&amp;gt; 线性地址 –&amp;gt; [paging unit] –&amp;gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。 内存操作流程地址总线用来指定内存的地址。地址线的根数决定了最大寻址空间。eg: 32根地址线，最大寻">
+  <meta name="description" content="CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&amp;gt; [segmentation unit] –&amp;gt; 线性地址 –&amp;gt; [paging unit] –&amp;gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。">
 <meta name="keywords" content="linux">
 <meta property="og:type" content="article">
 <meta property="og:title" content="内存寻址 - 分段">
 <meta property="og:url" content="http://yoursite.com/2019/02/20/linux-kernal-memory-md/index.html">
 <meta property="og:site_name" content="ustcr7">
-<meta property="og:description" content="CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&amp;gt; [segmentation unit] –&amp;gt; 线性地址 –&amp;gt; [paging unit] –&amp;gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。 内存操作流程地址总线用来指定内存的地址。地址线的根数决定了最大寻址空间。eg: 32根地址线，最大寻">
+<meta property="og:description" content="CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&amp;gt; [segmentation unit] –&amp;gt; 线性地址 –&amp;gt; [paging unit] –&amp;gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="http://yoursite.com/images/memory_cpu.png">
 <meta property="og:image" content="http://yoursite.com/images/linux-kernal-memory-md/segment_selector_fields.png">
 <meta property="og:image" content="http://yoursite.com/images/linux-kernal-memory-md/segment_unit.png">
-<meta property="og:updated_time" content="2019-02-23T10:41:52.546Z">
+<meta property="og:updated_time" content="2019-02-23T10:44:13.743Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="内存寻址 - 分段">
-<meta name="twitter:description" content="CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&amp;gt; [segmentation unit] –&amp;gt; 线性地址 –&amp;gt; [paging unit] –&amp;gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。 内存操作流程地址总线用来指定内存的地址。地址线的根数决定了最大寻址空间。eg: 32根地址线，最大寻">
+<meta name="twitter:description" content="CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&amp;gt; [segmentation unit] –&amp;gt; 线性地址 –&amp;gt; [paging unit] –&amp;gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。">
 <meta name="twitter:image" content="http://yoursite.com/images/memory_cpu.png">
   
     <link rel="alternative" href="/atom.xml" title="ustcr7" type="application/atom+xml">
@@ -183,7 +183,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&gt; [segmentation unit] –&gt; 线性地址 –&gt; [paging unit] –&gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。</p>
+        <p>CPU使用的是物理地址，而应用程序操作的则是逻辑地址，二者之间通过MMU来转换: 逻辑地址 –&gt; [segmentation unit] –&gt; 线性地址 –&gt; [paging unit] –&gt; 物理地址。本文主要描述80x86 CPU的内存分段以及linux的内存分段过程。<br><a id="more"></a></p>
 <h3 id="内存操作流程"><a href="#内存操作流程" class="headerlink" title="内存操作流程"></a>内存操作流程</h3><p><img src="/images/memory_cpu.png" alt="cpu操作内存流程" width="30%" height="30%"><br>地址总线用来指定内存的地址。地址线的根数决定了最大寻址空间。eg: 32根地址线，最大寻址范围是: 2^32 Bytes (内存的最小单元是字节)。<br>数据总线决定了cpu读写内存的速度。<br>控制总线用来决定对内存的操作类型(eg:读/写内存)。</p>
 <h3 id="8086-内存分段"><a href="#8086-内存分段" class="headerlink" title="8086 内存分段"></a>8086 内存分段</h3><p>8086 cpu的寄存器是16位，而内存地址总线是20位。为了充分使用1MB的寻址空间，使用 段地址 * 16 + 偏移地址 的方法来表示内存地址。<br>段地址存储在段寄存器里 (cs代码段 ds数据段 ss 堆栈寄存器 es附加寄存器)，例如cpu总是从 CS:IP (代码段寄存器:指令寄存器) 指向的内容读取指令。<br>由于程序可以修改CS IP寄存器，因此不同程序之间的内存很容易被互相破坏。</p>
 <h3 id="80286-内存分段"><a href="#80286-内存分段" class="headerlink" title="80286 内存分段"></a>80286 内存分段</h3><p>80286 cpu新增了保护模式(protected mode)，改进了分段的实现方式。新增了几个概念：</p>
